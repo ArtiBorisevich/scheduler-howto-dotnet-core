@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Microsoft.AspNetCore.Mvc;
 using SchedulerApp.Models;
 
 namespace SchedulerApp.Controllers
@@ -15,10 +17,9 @@ namespace SchedulerApp.Controllers
 
         // GET api/recurringevents
         [HttpGet]
-        public IEnumerable<WebAPIRecurring> Get([FromQuery] DateTime from, [FromQuery] DateTime to)
+        public IEnumerable<WebAPIRecurring> Get()
         {
             return _context.RecurringEvents
-                .Where(e => e.StartDate < to && e.EndDate >= from)
                 .ToList()
                 .Select(e => (WebAPIRecurring)e);
         }
@@ -32,58 +33,56 @@ namespace SchedulerApp.Controllers
                 .Find(id);
         }
 
-        // POST api/recurringevents
+        // POST api/events
         [HttpPost]
         public ObjectResult Post([FromForm] WebAPIRecurring apiEvent)
         {
             var newEvent = (SchedulerRecurringEvent)apiEvent;
-
-            _context.RecurringEvents.Add(newEvent);
-            _context.SaveChanges();
-
-            // delete a single occurrence from  recurring series
-            var resultAction = "inserted";
-            if (newEvent.RecType == "none")
+            var action = "inserted";
+            if (apiEvent.deleted == true)
             {
-                resultAction = "deleted";
+                // delete a single occurrence from  recurring series
+                action = "deleted";
             }
+            else
+            {
+                _context.RecurringEvents.Add(newEvent);
+            }
+            _context.SaveChanges();
 
             return Ok(new
             {
                 tid = newEvent.Id,
-                action = resultAction
+                action
             });
         }
 
         // PUT api/recurringevents/5
         [HttpPut("{id}")]
-        public ObjectResult Put(int id, [FromForm] WebAPIRecurring apiEvent)
+        public ObjectResult? Put(int id, [FromForm] WebAPIRecurring apiEvent)
         {
             var updatedEvent = (SchedulerRecurringEvent)apiEvent;
             var dbEvent = _context.RecurringEvents.Find(id);
-
             if (dbEvent == null)
             {
                 return null;
             }
-
             dbEvent.Name = updatedEvent.Name;
             dbEvent.StartDate = updatedEvent.StartDate;
             dbEvent.EndDate = updatedEvent.EndDate;
-            dbEvent.EventPID = updatedEvent.EventPID;
-            dbEvent.RecType = updatedEvent.RecType;
-            dbEvent.EventLength = updatedEvent.EventLength;
-
-            if (!string.IsNullOrEmpty(updatedEvent.RecType) && updatedEvent.RecType != "none")
+            dbEvent.Duration = updatedEvent.Duration;
+            dbEvent.Rrule = updatedEvent.Rrule;
+            dbEvent.RecurringEventId = updatedEvent.RecurringEventId;
+            dbEvent.OriginalStart = updatedEvent.OriginalStart;
+            if (!string.IsNullOrEmpty(dbEvent.Rrule) && dbEvent.RecurringEventId == null)
             {
                 // all modified occurrences must be deleted when we update recurring series
                 // https://docs.dhtmlx.com/scheduler/server_integration.html#savingrecurringevents
-
-                _context.RecurringEvents.RemoveRange(
-                    _context.RecurringEvents.Where(e => e.EventPID == id)
-                );
+                var eventsToDelete = _context.RecurringEvents
+                    .Where(e => !string.IsNullOrEmpty(e.RecurringEventId) && e.RecurringEventId == dbEvent.Id.ToString())
+                    .ToList();
+                _context.RecurringEvents.RemoveRange(eventsToDelete);
             }
-
             _context.SaveChanges();
 
             return Ok(new
@@ -96,37 +95,29 @@ namespace SchedulerApp.Controllers
         [HttpDelete("{id}")]
         public ObjectResult DeleteEvent(int id)
         {
-            var e = _context.RecurringEvents.Find(id);
-            if (e != null)
+            var dbEvent = _context.RecurringEvents.Find(id);
+            System.Diagnostics.Debug.WriteLine($"New Event: {dbEvent}");
+            if (dbEvent != null)
             {
-                // some logic specific to recurring events support
-                // https://docs.dhtmlx.com/scheduler/server_integration.html#savingrecurringevents
-
-                if (e.EventPID != default(int))
+                if (dbEvent.RecurringEventId != null)
                 {
                     // deleting modified occurrence from recurring series
-                    // If an event with the event_pid value was deleted - it needs updating 
-                    // with rec_type==none instead of deleting.
-
-                    e.RecType = "none";
+                    // If an event with the recurring_event_id value was deleted - it needs updating with .deleted = true instead of deleting.
+                    dbEvent.Deleted = true;
                 }
                 else
                 {
-                    // if a recurring series was deleted - delete all modified occurrences of the series
-                    if (!string.IsNullOrEmpty(e.RecType) && e.RecType != "none")
+                    if (dbEvent.Rrule != null)
                     {
-                        // all modified occurrences must be deleted when we update recurring series
-                        // https://docs.dhtmlx.com/scheduler/server_integration.html#savingrecurringevents
-
-                        _context.RecurringEvents.RemoveRange(
-                            _context.RecurringEvents.Where(ev => ev.EventPID == id)
-                        );
+                        // if a recurring series was deleted - delete all modified occurrences of the series
+                        var eventsToDelete = _context.RecurringEvents
+                            .Where(e => !string.IsNullOrEmpty(e.RecurringEventId) && e.RecurringEventId == dbEvent.Id.ToString())
+                            .ToList();
+                        System.Diagnostics.Debug.WriteLine($"delete Events: {eventsToDelete}");
+                        _context.RecurringEvents.RemoveRange(eventsToDelete);
                     }
-
-                    _context.RecurringEvents.Remove(e);
+                    _context.RecurringEvents.Remove(dbEvent);
                 }
-
-
                 _context.SaveChanges();
             }
 

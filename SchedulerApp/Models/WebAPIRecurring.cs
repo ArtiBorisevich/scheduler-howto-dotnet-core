@@ -1,30 +1,33 @@
-﻿using System.Text.Encodings.Web;
-
+﻿using System;
+using System.Text.Json.Serialization;
 namespace SchedulerApp.Models
 {
     public class WebAPIRecurring
     {
+        [JsonPropertyName("id")]
         public int id { get; set; }
         public string? text { get; set; }
         public string? start_date { get; set; }
         public string? end_date { get; set; }
-
-        public int? event_pid { get; set; }
-        public string? rec_type { get; set; }
-        public long? event_length { get; set; }
+        public int? duration { get; set; }
+        public string? rrule { get; set; }
+        public string? recurring_event_id { get; set; }
+        public string? original_start { get; set; }
+        public bool? deleted { get; set; }
 
         public static explicit operator WebAPIRecurring(SchedulerRecurringEvent ev)
         {
             return new WebAPIRecurring
             {
                 id = ev.Id,
-                text = HtmlEncoder.Default.Encode(ev.Name != null ? ev.Name : ""),
+                text = ev.Name,
                 start_date = ev.StartDate.ToString("yyyy-MM-dd HH:mm"),
                 end_date = ev.EndDate.ToString("yyyy-MM-dd HH:mm"),
-
-                event_pid = ev.EventPID,
-                rec_type = ev.RecType,
-                event_length = ev.EventLength
+                duration = ev.Duration,
+                rrule = ev.Rrule,
+                recurring_event_id = ev.RecurringEventId,
+                original_start = ev.OriginalStart,
+                deleted = ev.Deleted,
             };
         }
 
@@ -35,13 +38,14 @@ namespace SchedulerApp.Models
                 Id = ev.id,
                 Name = ev.text,
                 StartDate = ev.start_date != null ? DateTime.Parse(ev.start_date,
-                    System.Globalization.CultureInfo.InvariantCulture) : new DateTime(),
+                  System.Globalization.CultureInfo.InvariantCulture) : new DateTime(),
                 EndDate = ev.end_date != null ? DateTime.Parse(ev.end_date,
-                    System.Globalization.CultureInfo.InvariantCulture) : new DateTime(),
-
-                EventPID = ev.event_pid != null ? ev.event_pid.Value : 0,
-                EventLength = ev.event_length != null ? ev.event_length.Value : 0,
-                RecType = ev.rec_type
+                  System.Globalization.CultureInfo.InvariantCulture) : new DateTime(),
+                Duration = ev.duration,
+                Rrule = ev.rrule,
+                RecurringEventId = ev.recurring_event_id,
+                OriginalStart = ev.original_start,
+                Deleted = ev.deleted
             };
         }
     }
