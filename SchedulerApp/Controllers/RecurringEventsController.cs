@@ -17,9 +17,10 @@ namespace SchedulerApp.Controllers
 
         // GET api/recurringevents
         [HttpGet]
-        public IEnumerable<WebAPIRecurring> Get()
+        public IEnumerable<WebAPIRecurring> Get([FromQuery] DateTime from, [FromQuery] DateTime to)
         {
             return _context.RecurringEvents
+                .Where(e => e.StartDate < to && e.EndDate >= from)
                 .ToList()
                 .Select(e => (WebAPIRecurring)e);
         }
@@ -33,7 +34,7 @@ namespace SchedulerApp.Controllers
                 .Find(id);
         }
 
-        // POST api/events
+        // POST api/recurringevents
         [HttpPost]
         public ObjectResult Post([FromForm] WebAPIRecurring apiEvent)
         {
@@ -44,10 +45,7 @@ namespace SchedulerApp.Controllers
                 // delete a single occurrence from  recurring series
                 action = "deleted";
             }
-            else
-            {
-                _context.RecurringEvents.Add(newEvent);
-            }
+            _context.RecurringEvents.Add(newEvent);
             _context.SaveChanges();
 
             return Ok(new
