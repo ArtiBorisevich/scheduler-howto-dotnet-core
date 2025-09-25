@@ -69,10 +69,10 @@ namespace SchedulerApp.Controllers
             dbEvent.StartDate = updatedEvent.StartDate;
             dbEvent.EndDate = updatedEvent.EndDate;
             dbEvent.Duration = updatedEvent.Duration;
-            dbEvent.Rrule = updatedEvent.Rrule;
+            dbEvent.RRule = updatedEvent.RRule;
             dbEvent.RecurringEventId = updatedEvent.RecurringEventId;
             dbEvent.OriginalStart = updatedEvent.OriginalStart;
-            if (!string.IsNullOrEmpty(dbEvent.Rrule) && dbEvent.RecurringEventId == null)
+            if (!string.IsNullOrEmpty(dbEvent.RRule) && dbEvent.RecurringEventId == null)
             {
                 // all modified occurrences must be deleted when we update recurring series
                 // https://docs.dhtmlx.com/scheduler/server_integration.html#savingrecurringevents
@@ -105,7 +105,7 @@ namespace SchedulerApp.Controllers
                 }
                 else
                 {
-                    if (dbEvent.Rrule != null)
+                    if (dbEvent.RRule != null)
                     {
                         // if a recurring series was deleted - delete all modified occurrences of the series
                         var eventsToDelete = _context.RecurringEvents

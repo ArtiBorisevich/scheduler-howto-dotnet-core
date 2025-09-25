@@ -24,7 +24,7 @@ namespace SchedulerApp.Models
                 start_date = ev.StartDate.ToString("yyyy-MM-dd HH:mm"),
                 end_date = ev.EndDate.ToString("yyyy-MM-dd HH:mm"),
                 duration = ev.Duration,
-                rrule = ev.Rrule,
+                rrule = ev.RRule,
                 recurring_event_id = ev.RecurringEventId,
                 original_start = ev.OriginalStart,
                 deleted = ev.Deleted,
@@ -42,7 +42,7 @@ namespace SchedulerApp.Models
                 EndDate = ev.end_date != null ? DateTime.Parse(ev.end_date,
                   System.Globalization.CultureInfo.InvariantCulture) : new DateTime(),
                 Duration = ev.duration,
-                Rrule = ev.rrule,
+                RRule = ev.rrule,
                 RecurringEventId = ev.recurring_event_id,
                 OriginalStart = ev.original_start,
                 Deleted = ev.deleted
